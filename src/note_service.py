@@ -1,6 +1,6 @@
 """Business operations for creating and managing notes."""
 
-from typing import Iterable
+from typing import Any, Iterable
 
 from .models import Note
 from .storage import JsonNoteStorage
@@ -21,3 +21,14 @@ class NoteService:
         notes.append(note.to_dict())
         self.storage.save_notes(notes)
         return note
+
+    def list_notes(self) -> list[dict[str, Any]]:
+        """Return all saved notes for display."""
+        return self.storage.load_notes()
+
+    def get_note_detail(self, note_number: int) -> dict[str, Any] | None:
+        """Return one note by its one-based number in the note list."""
+        notes = self.list_notes()
+        if note_number < 1 or note_number > len(notes):
+            return None
+        return notes[note_number - 1]

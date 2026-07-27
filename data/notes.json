@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "d0e3dc0a-ca35-440b-bc7e-563b9c6463f2",
+    "title": "第一条笔记26.7.27",
+    "content": "完成了命令行笔记功能v1",
+    "tags": [
+      "codex agnet coding",
+      "python"
+    ],
+    "created_at": "2026-07-27T13:09:27.436049+00:00",
+    "updated_at": "2026-07-27T13:09:27.436049+00:00",
+    "is_archived": false
+  },
+  {
+    "id": "3ac2e6bd-d59b-4614-804e-6246f359976e",
+    "title": "26.7.28",
+    "content": "利用codex实现了笔记新建，查看功能",
+    "tags": [
+      "codex",
+      "python"
+    ],
+    "created_at": "2026-07-27T16:17:34.877076+00:00",
+    "updated_at": "2026-07-27T16:17:34.877076+00:00",
+    "is_archived": false
+  }
+]
