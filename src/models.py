@@ -23,12 +23,9 @@ class Note:
         cls, title: str, content: str, tags: Iterable[str] | None = None
     ) -> "Note":
         """Build a new note with an ID and timestamps."""
-        clean_title = title.strip()
-        if not clean_title:
-            raise ValueError("Note title cannot be empty.")
-
+        clean_title = cls.clean_title(title)
         now = datetime.now(timezone.utc).isoformat()
-        clean_tags = cls._clean_tags(tags or [])
+        clean_tags = cls.clean_tags(tags or [])
         return cls(
             id=str(uuid4()),
             title=clean_title,
@@ -43,7 +40,15 @@ class Note:
         return asdict(self)
 
     @staticmethod
-    def _clean_tags(tags: Iterable[str]) -> list[str]:
+    def clean_title(title: str) -> str:
+        """Remove surrounding whitespace and require a non-empty title."""
+        clean_title = title.strip()
+        if not clean_title:
+            raise ValueError("Note title cannot be empty.")
+        return clean_title
+
+    @staticmethod
+    def clean_tags(tags: Iterable[str]) -> list[str]:
         """Remove blank and duplicate tags while keeping their order."""
         clean_tags: list[str] = []
         for tag in tags:
