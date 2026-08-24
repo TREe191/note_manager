@@ -62,59 +62,73 @@ class NoteCli:
         print(f"笔记已保存，编号：{note.id}")
 
     def list_notes(self) -> None:
-        """Display the basic information for every saved note."""
-        notes = self.note_service.list_notes()
+        """Display notes and allow a selected note to be opened."""
+        while True:
+            notes = self.note_service.list_notes()
+            if not notes:
+                print("\n暂无笔记。")
+                return
 
-        if not notes:
-            print("\n暂无笔记。")
-            return
+            self._display_note_summaries(notes, "笔记列表")
 
-        print("\n笔记列表")
-        for index, note in enumerate(notes, start=1):
+            note_number = self._read_note_number(
+                "输入笔记编号查看详情，输入 0 返回主菜单："
+            )
+            if note_number == 0:
+                return
+            if self.note_service.get_note_detail(note_number) is None:
+                print("未找到该编号的笔记。")
+                continue
+
+            self.view_note_detail(note_number)
+
+    def view_note_detail(self, note_number: int | None = None) -> None:
+        """Display one note and provide actions for that note."""
+        if note_number is None:
+            note_number = self._read_note_number("请输入笔记编号（输入 0 返回）：")
+            if note_number == 0:
+                return
+
+        while True:
+            note = self.note_service.get_note_detail(note_number)
+            if note is None:
+                print("未找到该编号的笔记。")
+                return
+
             tags = note.get("tags", [])
             tags_text = ", ".join(tags) if tags else "无"
-            print(f"\n{index}. {note.get('title', '未命名笔记')}")
-            print(f"   标签：{tags_text}")
-            print(f"   更新时间：{note.get('updated_at', '未知')}")
+            print("\n笔记详情")
+            print(f"标题：{note.get('title', '未命名笔记')}")
+            print(f"正文：{note.get('content', '')}")
+            print(f"标签：{tags_text}")
+            print(f"创建时间：{note.get('created_at', '未知')}")
+            print(f"更新时间：{note.get('updated_at', '未知')}")
+            print("\n1. 编辑当前笔记")
+            print("2. 删除当前笔记")
+            print("0. 返回")
+            choice = input("请选择操作：").strip()
 
-    def view_note_detail(self) -> None:
-        """Display all available information for one selected note."""
-        note_number_text = input("请输入笔记编号：").strip()
+            if choice == "1":
+                self.edit_note(note_number)
+            elif choice == "2":
+                if self.delete_note(note_number):
+                    return
+            elif choice == "0":
+                return
+            else:
+                print("无效选择，请输入 1、2 或 0。")
 
-        try:
-            note_number = int(note_number_text)
-        except ValueError:
-            print("笔记编号必须是正整数。")
-            return
-
-        note = self.note_service.get_note_detail(note_number)
-        if note is None:
-            print("未找到该编号的笔记。")
-            return
-
-        tags = note.get("tags", [])
-        tags_text = ", ".join(tags) if tags else "无"
-        print("\n笔记详情")
-        print(f"标题：{note.get('title', '未命名笔记')}")
-        print(f"正文：{note.get('content', '')}")
-        print(f"标签：{tags_text}")
-        print(f"创建时间：{note.get('created_at', '未知')}")
-        print(f"更新时间：{note.get('updated_at', '未知')}")
-
-    def edit_note(self) -> None:
+    def edit_note(self, note_number: int | None = None) -> bool:
         """Collect replacement values and save changes to one note."""
-        note_number_text = input("请输入要编辑的笔记编号：").strip()
-
-        try:
-            note_number = int(note_number_text)
-        except ValueError:
-            print("笔记编号必须是正整数。")
-            return
+        if note_number is None:
+            note_number = self._select_note_for_action("编辑")
+            if note_number is None:
+                return False
 
         note = self.note_service.get_note_detail(note_number)
         if note is None:
             print("未找到该编号的笔记。")
-            return
+            return False
 
         print("直接回车保留当前内容；标签输入 - 可清空。")
         title_input = input(f"标题（当前：{note.get('title', '')}）：")
@@ -140,54 +154,157 @@ class NoteCli:
             )
         except ValueError as error:
             print(f"编辑失败：{error}")
-            return
+            return False
 
         if updated_note is None:
             print("未找到该编号的笔记。")
-            return
+            return False
 
         print("笔记已更新。")
+        return True
 
-    def delete_note(self) -> None:
+    def delete_note(self, note_number: int | None = None) -> bool:
         """Confirm and delete one selected note."""
-        note_number_text = input("请输入要删除的笔记编号：").strip()
-
-        try:
-            note_number = int(note_number_text)
-        except ValueError:
-            print("笔记编号必须是正整数。")
-            return
+        if note_number is None:
+            note_number = self._select_note_for_action("删除")
+            if note_number is None:
+                return False
 
         note = self.note_service.get_note_detail(note_number)
         if note is None:
             print("未找到该编号的笔记。")
-            return
+            return False
 
         title = note.get("title", "未命名笔记")
         confirmation = input(f"确认删除笔记“{title}”？输入 y 确认：").strip().lower()
         if confirmation != "y":
             print("已取消删除。")
-            return
+            return False
 
         deleted_note = self.note_service.delete_note(note_number)
         if deleted_note is None:
             print("未找到该编号的笔记。")
-            return
+            return False
 
         print("笔记已删除。")
+        return True
 
     def search_notes(self) -> None:
-        """Collect a keyword and display matching note summaries."""
+        """Display matching notes and allow a result to be opened."""
         keyword = input("请输入关键词：")
-        results = self.note_service.search_notes(keyword)
+        while True:
+            results = self.note_service.search_notes(keyword)
+            if not results:
+                print("未找到匹配的笔记。")
+                return
 
-        if not results:
-            print("未找到匹配的笔记。")
-            return
+            result_numbers = {note["note_number"] for note in results}
+            self._display_note_summaries(results, "搜索结果")
 
-        print("\n搜索结果")
-        for note in results:
+            note_number = self._read_note_number(
+                "输入笔记编号查看详情，输入 0 返回主菜单："
+            )
+            if note_number == 0:
+                return
+            if note_number not in result_numbers:
+                print("该编号不在当前搜索结果中。")
+                continue
+
+            self.view_note_detail(note_number)
+
+    def _select_note_for_action(self, action_name: str) -> int | None:
+        """Select a note from the list or from a keyword search."""
+        while True:
+            notes = self.note_service.list_notes()
+            if not notes:
+                print("\n暂无笔记。")
+                return None
+
+            self._display_note_summaries(notes, f"选择要{action_name}的笔记")
+            choice = input(
+                "输入笔记编号选择，输入 s 搜索，输入 0 取消："
+            ).strip()
+            if choice == "0":
+                return None
+            if choice.casefold() == "s":
+                note_number = self._select_search_result_for_action(action_name)
+                if note_number is not None:
+                    return note_number
+                continue
+
+            note_number = self._parse_note_number(choice)
+            if note_number is None:
+                continue
+            if self.note_service.get_note_detail(note_number) is None:
+                print("未找到该编号的笔记。")
+                continue
+            return note_number
+
+    def _select_search_result_for_action(self, action_name: str) -> int | None:
+        """Search for a note and return one original note number."""
+        while True:
+            keyword = input("请输入关键词（输入 0 返回笔记列表）：").strip()
+            if keyword == "0":
+                return None
+
+            results = self.note_service.search_notes(keyword)
+            if not results:
+                print("未找到匹配的笔记。")
+                continue
+
+            result_numbers = {note["note_number"] for note in results}
+            while True:
+                self._display_note_summaries(results, f"选择要{action_name}的搜索结果")
+                choice = input("输入笔记编号选择，输入 0 返回笔记列表：").strip()
+                if choice == "0":
+                    return None
+
+                note_number = self._parse_note_number(choice)
+                if note_number is None:
+                    continue
+                if note_number not in result_numbers:
+                    print("该编号不在当前搜索结果中。")
+                    continue
+                return note_number
+
+    @staticmethod
+    def _display_note_summaries(notes: list[dict], heading: str) -> None:
+        """Display note summaries while preserving their original numbers."""
+        print(f"\n{heading}")
+        for index, note in enumerate(notes, start=1):
+            note_number = note.get("note_number", index)
             tags = note.get("tags", [])
             tags_text = ", ".join(tags) if tags else "无"
-            print(f"\n{note['note_number']}. {note.get('title', '未命名笔记')}")
+            print(f"\n{note_number}. {note.get('title', '未命名笔记')}")
             print(f"   标签：{tags_text}")
+            print(f"   更新时间：{note.get('updated_at', '未知')}")
+
+    @staticmethod
+    def _read_note_number(prompt: str) -> int:
+        """Read a positive note number or zero for returning."""
+        while True:
+            value = input(prompt).strip()
+            try:
+                note_number = int(value)
+            except ValueError:
+                print("笔记编号必须是正整数，或输入 0 返回。")
+                continue
+
+            if note_number < 0:
+                print("笔记编号必须是正整数，或输入 0 返回。")
+                continue
+            return note_number
+
+    @staticmethod
+    def _parse_note_number(value: str) -> int | None:
+        """Parse a positive note number and report invalid values."""
+        try:
+            note_number = int(value)
+        except ValueError:
+            print("笔记编号必须是正整数。")
+            return None
+
+        if note_number < 1:
+            print("笔记编号必须是正整数。")
+            return None
+        return note_number

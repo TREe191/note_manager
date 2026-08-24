@@ -1,18 +1,63 @@
 # Personal Note Manager
 
-A beginner-friendly Python command-line project for managing local notes.
+一个面向初学者的 Python 命令行个人笔记管理器。项目使用本地 JSON 文件保存数据，适合练习需求拆分、分层设计、测试和基础软件开发流程。
 
-## V1 Scope
+## V1.0 已完成功能
 
-The first version will manage notes in a local JSON file through a command-line interface.
+- 创建笔记：输入标题、正文和可选标签后保存笔记。
+- 查看笔记列表：展示笔记编号、标题、标签和更新时间。
+- 查看笔记详情：按笔记编号查看标题、正文、标签、创建时间和更新时间。
+- 编辑笔记：按编号修改标题、正文和标签，并更新修改时间。
+- 删除笔记：按编号选择笔记，确认后删除并保存数据。
+- 搜索笔记：按关键词搜索标题、正文和标签，并按标签匹配程度和更新时间排序。
+- JSON 持久化：笔记保存于本地 JSON 文件，重启程序后仍可读取。
+- `unittest` 测试：覆盖创建、存储读取、列表、详情、编辑、删除和搜索等核心逻辑。
 
-## Project Structure
+## 运行方式
 
-- `main.py`: program entry point.
-- `src/`: application modules.
-- `data/notes.json`: local note data.
-- `tests/`: automated tests.
+在项目根目录运行：
 
-## Development Status
+```powershell
+python main.py
+```
 
-Project skeleton created. Note features have not been implemented yet.
+程序启动后，根据菜单输入对应编号即可操作。搜索结果显示的笔记编号可直接用于查看详情、编辑或删除。
+
+## 测试方式
+
+在项目根目录运行：
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+测试使用临时数据文件，不会修改 `data/notes.json` 中的真实笔记。
+
+## 项目结构
+
+```text
+note_manager/
+├─ main.py                 # 程序入口：配置存储并启动命令行界面
+├─ data/
+│  └─ notes.json           # 本地笔记数据
+├─ src/
+│  ├─ models.py            # 笔记数据模型和字段清理规则
+│  ├─ storage.py           # JSON 文件读取与保存
+│  ├─ note_service.py      # 创建、查询、编辑、删除、搜索等业务逻辑
+│  ├─ cli.py               # 命令行菜单、输入和结果展示
+│  └─ utils.py             # 预留的通用工具模块
+├─ tests/
+│  ├─ test_note_service.py # 业务逻辑测试
+│  └─ test_storage.py      # JSON 存储测试
+├─ .gitignore              # Git 忽略规则
+└─ README.md               # 项目说明
+```
+
+## 未来方向
+
+以下内容尚未实现，作为后续学习和迭代方向：
+
+- V1.1：归档笔记、按标签筛选、按时间排序、导入导出与更完善的输入校验。
+- V2：使用 SQLite 替换 JSON 存储，并保留现有服务层接口。
+- V2：增加 Web 界面，例如使用 Flask 或 FastAPI 提供网页操作入口。
+- V2：增加 AI 辅助能力，例如笔记摘要、自动标签和语义搜索。
