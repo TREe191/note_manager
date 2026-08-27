@@ -4,13 +4,13 @@ from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from .models import Note
-from .storage import JsonNoteStorage
+from .storage import NoteStorage
 
 
 class NoteService:
     """Coordinate note creation with the configured storage."""
 
-    def __init__(self, storage: JsonNoteStorage) -> None:
+    def __init__(self, storage: NoteStorage) -> None:
         self.storage = storage
 
     def create_note(

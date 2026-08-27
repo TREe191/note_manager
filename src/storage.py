@@ -2,7 +2,17 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+
+
+class NoteStorage(Protocol):
+    """Storage contract used by the note service."""
+
+    def load_notes(self) -> list[dict[str, Any]]:
+        """Return all saved notes in their display order."""
+
+    def save_notes(self, notes: list[dict[str, Any]]) -> None:
+        """Persist all notes in their display order."""
 
 
 class JsonNoteStorage:
