@@ -33,7 +33,11 @@ class NoteMainWindowTestCase(unittest.TestCase):
         self.window = NoteMainWindow(NoteController(self.service))
         self.window.show()
         self.application.processEvents()
-        self.window.note_list.setCurrentRow(0)
+        for index in range(self.window.note_list.count()):
+            item = self.window.note_list.item(index)
+            if item.data(Qt.ItemDataRole.UserRole) == self.first_note.id:
+                self.window.note_list.setCurrentItem(item)
+                break
         self.application.processEvents()
 
     def tearDown(self) -> None:
@@ -134,6 +138,67 @@ class NoteMainWindowTestCase(unittest.TestCase):
         self.application.processEvents()
 
         self.assertEqual(self.window.note_list.count(), 2)
+
+    def test_sorting_search_results_changes_only_the_visible_order(self) -> None:
+        """Sorting results keeps the search filter and saved order unchanged."""
+        third_note = self.service.create_note("第三条", "正文三", ["Python"])
+        saved_notes = self.service.list_notes()
+        saved_notes[0].update(
+            {
+                "title": "Beta",
+                "tags": ["Python"],
+                "created_at": "2026-08-27T10:00:00+00:00",
+                "updated_at": "2026-08-27T11:00:00+00:00",
+            }
+        )
+        saved_notes[1].update(
+            {
+                "title": "Alpha",
+                "created_at": "2026-08-27T12:00:00+00:00",
+                "updated_at": "2026-08-27T13:00:00+00:00",
+            }
+        )
+        saved_notes[2].update(
+            {
+                "title": "Gamma",
+                "created_at": "2026-08-27T14:00:00+00:00",
+                "updated_at": "2026-08-27T15:00:00+00:00",
+            }
+        )
+        self.service.storage.save_notes(saved_notes)
+        self.window.refresh_notes()
+
+        self.window.search_input.setText("Python")
+        self.window.sort_selector.setCurrentIndex(
+            self.window.sort_selector.findData("updated_at")
+        )
+        self.application.processEvents()
+
+        visible_ids = [
+            self.window.note_list.item(index).data(Qt.ItemDataRole.UserRole)
+            for index in range(self.window.note_list.count())
+        ]
+        self.assertEqual(
+            visible_ids,
+            [third_note.id, saved_notes[1]["id"], self.first_note.id],
+        )
+        self.assertEqual(
+            [note["id"] for note in self.service.list_notes()],
+            [self.first_note.id, saved_notes[1]["id"], third_note.id],
+        )
+
+    def test_sorting_keeps_the_current_note_selected(self) -> None:
+        """Changing display order preserves the selection by stable ID."""
+        self.window.sort_selector.setCurrentIndex(
+            self.window.sort_selector.findData("title")
+        )
+        self.application.processEvents()
+
+        self.assertEqual(self.window.selected_note_id, self.first_note.id)
+        self.assertEqual(
+            self.window.note_list.currentItem().data(Qt.ItemDataRole.UserRole),
+            self.first_note.id,
+        )
 
     def test_confirmed_delete_refreshes_list_and_clears_detail(self) -> None:
         """Confirmed deletion removes the selection and returns to the empty state."""

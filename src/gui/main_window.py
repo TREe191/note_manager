@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
+    QComboBox,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -66,10 +67,17 @@ class NoteMainWindow(QMainWindow):
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self.refresh_notes)
 
+        self.sort_selector = QComboBox()
+        self.sort_selector.addItem("按更新时间（最新优先）", "updated_at")
+        self.sort_selector.addItem("按创建时间（最新优先）", "created_at")
+        self.sort_selector.addItem("按标题（A → Z）", "title")
+        self.sort_selector.currentIndexChanged.connect(self.refresh_notes)
+
         self.new_note_button = QPushButton("+ 新建笔记")
         self.new_note_button.clicked.connect(self._start_new_note)
 
         layout.addWidget(self.search_input, 1)
+        layout.addWidget(self.sort_selector)
         layout.addWidget(self.new_note_button)
         return layout
 
@@ -199,7 +207,7 @@ class NoteMainWindow(QMainWindow):
         layout.addLayout(actions)
         return page
 
-    def refresh_notes(self, _keyword: str | None = None) -> None:
+    def refresh_notes(self, *_args: object) -> None:
         """Reload the list while preserving selection by stable note ID."""
         notes = self._notes_for_current_filter()
         selected_item: QListWidgetItem | None = None
@@ -340,8 +348,32 @@ class NoteMainWindow(QMainWindow):
         """Return all notes or the current service-ranked search results."""
         keyword = self.search_input.text().strip()
         if not keyword:
-            return self.controller.list_notes()
-        return self.controller.search_notes(keyword)
+            notes = self.controller.list_notes()
+        else:
+            notes = self.controller.search_notes(keyword)
+        return self._sort_notes_for_display(notes)
+
+    def _sort_notes_for_display(
+        self, notes: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Order visible notes without changing their saved storage order."""
+        sort_field = self.sort_selector.currentData()
+        if sort_field == "title":
+            return sorted(
+                notes,
+                key=lambda note: (
+                    str(note.get("title", "")).casefold(),
+                    str(note.get("id", "")),
+                ),
+            )
+        return sorted(
+            notes,
+            key=lambda note: (
+                str(note.get(sort_field, "")),
+                str(note.get("id", "")),
+            ),
+            reverse=True,
+        )
 
     def _show_selected_note(self) -> None:
         """Display the current selection, falling back to the empty state."""

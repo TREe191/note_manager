@@ -9,7 +9,7 @@ QWidget {
     font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
     font-size: 14px;
 }
-QLineEdit, QPlainTextEdit {
+QLineEdit, QPlainTextEdit, QComboBox {
     background: #26282d;
     border: 1px solid #3a3d45;
     border-radius: 4px;
@@ -17,7 +17,7 @@ QLineEdit, QPlainTextEdit {
     padding: 8px;
     selection-background-color: #365a88;
 }
-QLineEdit:focus, QPlainTextEdit:focus {
+QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus {
     border-color: #6397d0;
 }
 QPushButton {
@@ -34,6 +34,16 @@ QPushButton:disabled, QLineEdit:disabled {
     background: #292b30;
     border-color: #34363c;
     color: #777b85;
+}
+QComboBox::drop-down {
+    border: none;
+    padding-right: 6px;
+}
+QComboBox QAbstractItemView {
+    background: #26282d;
+    border: 1px solid #3a3d45;
+    color: #e7e8eb;
+    selection-background-color: #365a88;
 }
 QListWidget {
     background: #24262b;
