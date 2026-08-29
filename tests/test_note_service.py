@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+from src.markdown_io import note_to_markdown
 from src.note_service import NoteService
 from src.storage import JsonNoteStorage
 
@@ -69,6 +70,45 @@ class NoteServiceTestCase(unittest.TestCase):
 
         self.assertIsNone(self.service.get_note_detail(0))
         self.assertIsNone(self.service.get_note_detail(2))
+
+    def test_export_note_to_markdown_uses_the_existing_note_detail(self) -> None:
+        """An existing note is exported through the shared Markdown converter."""
+        created_note = self.service.create_note("导出标题", "# Markdown 正文", ["导出"])
+
+        markdown_text = self.service.export_note_to_markdown(1)
+
+        self.assertIsNotNone(markdown_text)
+        self.assertIn('title: "导出标题"', markdown_text)
+        self.assertIn("# Markdown 正文", markdown_text)
+        self.assertIn(created_note.created_at, markdown_text)
+
+    def test_import_note_from_markdown_creates_a_new_note(self) -> None:
+        """Valid project Markdown becomes a newly saved note through create_note."""
+        markdown_text = note_to_markdown(
+            {
+                "title": "导入标题",
+                "content": "导入的 **Markdown** 正文",
+                "tags": ["导入", "测试"],
+                "created_at": "2026-08-29T10:00:00+00:00",
+                "updated_at": "2026-08-29T11:00:00+00:00",
+            }
+        )
+
+        imported_note = self.service.import_note_from_markdown(markdown_text)
+
+        self.assertEqual(imported_note.title, "导入标题")
+        self.assertEqual(imported_note.content, "导入的 **Markdown** 正文")
+        self.assertEqual(imported_note.tags, ["导入", "测试"])
+        self.assertEqual(self.storage.load_notes(), [imported_note.to_dict()])
+
+    def test_invalid_markdown_does_not_create_a_note(self) -> None:
+        """A parsing failure leaves the configured storage unchanged."""
+        existing_note = self.service.create_note("已有标题", "已有正文")
+
+        with self.assertRaisesRegex(ValueError, "metadata must start"):
+            self.service.import_note_from_markdown("不符合项目格式的内容")
+
+        self.assertEqual(self.storage.load_notes(), [existing_note.to_dict()])
 
     def test_update_note_changes_fields_time_and_saved_data(self) -> None:
         """Editing a note updates its fields, timestamp, and JSON record."""

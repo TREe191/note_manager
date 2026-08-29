@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
+from .markdown_io import markdown_to_note, note_to_markdown
 from .models import Note
 from .storage import NoteStorage
 
@@ -16,7 +17,7 @@ class NoteService:
     def create_note(
         self, title: str, content: str, tags: Iterable[str] | None = None
     ) -> Note:
-        """Create a note and save it to the JSON data file."""
+        """Create a note and save it through the configured storage."""
         note = Note.create(title=title, content=content, tags=tags)
         notes = self.storage.load_notes()
         notes.append(note.to_dict())
@@ -33,6 +34,22 @@ class NoteService:
         if note_number < 1 or note_number > len(notes):
             return None
         return notes[note_number - 1]
+
+    def export_note_to_markdown(self, note_number: int) -> str | None:
+        """Export one existing note as Markdown, or return None when unavailable."""
+        note = self.get_note_detail(note_number)
+        if note is None:
+            return None
+        return note_to_markdown(note)
+
+    def import_note_from_markdown(self, markdown_text: str) -> Note:
+        """Parse project Markdown and save it as a newly created note."""
+        imported_note = markdown_to_note(markdown_text)
+        return self.create_note(
+            imported_note["title"],
+            imported_note["content"],
+            imported_note["tags"],
+        )
 
     def update_note(
         self, note_number: int, title: str, content: str, tags: Iterable[str]
